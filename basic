@@ -10,7 +10,7 @@ struct File {
 };
 
 class Student {
-public:
+public://sdafkdmskfsaf
     string name;
     int rollNo;
     float cgpa;
