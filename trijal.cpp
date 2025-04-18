@@ -4,11 +4,22 @@
 #include <fstream>
 using namespace std;
 
+class Faculty;
+class HOD;
+class Student;
+
 // Structure to represent a file uploaded by a user
 struct File {
     string filename;
     string uploaderRole;
 };
+
+string caesarCipher(string text) {
+    for (char& c : text) {
+        c = (c + 5);  // Shift within the alphabet
+        }
+    return text;
+}
 
 // Student class encapsulates student data and file management
 class Student {
@@ -109,9 +120,11 @@ public:
     Faculty(string n, const string& key) : name(n), passkey(key) {}
 
     bool verifyPasskey(const string& key) const {
-        return key == passkey;
+        return caesarCipher(key) == passkey;
     }
 
+    friend void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students);
+    friend class HOD;
     void uploadFile() {
         string fname;
         cout << "Enter file name to upload: ";
@@ -235,9 +248,12 @@ public:
     HOD(string n, const string& key) : name(n), passkey(key) {}
 
     bool verifyPasskey(const string& key) const {
-        return key == passkey;
+
+        return caesarCipher(key) == passkey;
     }
 
+    friend void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students);
+    
     void viewAllStudentData(const vector<Student>& students) const {
         cout << "All student data:\n";
         for (const auto& s : students) {
@@ -274,10 +290,10 @@ public:
         getline(cin, name);
         cout << "Enter passkey for new faculty: ";
         cin >> passkey;
-        faculties.emplace_back(name, passkey);
+        faculties.emplace_back(name, caesarCipher(passkey));
         ofstream out(filename, ios::app);
         if (out.is_open()) {
-            out << name << "," << passkey << "\n";
+            out << name << "," << caesarCipher(passkey) << "\n";
             out.close();
             cout << "Faculty hired successfully.\n";
         } else {
@@ -290,25 +306,104 @@ public:
             cout << "No faculty to remove.\n";
             return;
         }
+    
+        // List all faculty names
         vector<string> names;
         for (const auto& f : faculties) names.push_back(f.name);
+    
+        // Get index of faculty to remove
         int index = getIndexByName(names, "Select a faculty to remove:");
         if (index < 0 || index >= (int)faculties.size()) {
             cout << "Invalid selection.\n";
             return;
         }
+    
+        // Remove the selected faculty from the list
+        string facultyToRemove = faculties[index].name;
         faculties.erase(faculties.begin() + index);
+    
+        // Open the file for updating
         ofstream out(filename);
-        if (out.is_open()) {
-            for (const auto& f : faculties) {
-                out << f.name << ",placeholder\n"; // Placeholder passkey
-            }
-            out.close();
-            cout << "Faculty removed successfully.\n";
-        } else {
+        if (!out.is_open()) {
             cout << "Error updating faculty file.\n";
+            return;
+        }
+    
+        // Write remaining faculty data to file
+        out << faculties.size() << "\n";  // Write the new number of faculties
+        for (const auto& f : faculties) {
+            out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
+        }
+    
+        out.close();
+        cout << "Faculty " << facultyToRemove << " removed successfully.\n";
+    }
+
+    void AddStudent(vector<Student>& students, const string& filename) {
+        string name;
+        int rollNo;
+        float cgpa;
+        int attendance;
+    
+        // Collect student data
+        cout << "Enter student name: ";
+        cin.ignore(1000, '\n'); // flush input buffer
+        getline(cin, name);
+        cout << "Enter student roll number: ";
+        cin >> rollNo;
+        cout << "Enter student CGPA: ";
+        cin >> cgpa;
+        cout << "Enter student attendance percentage: ";
+        cin >> attendance;
+    
+        // Add student to the list
+        students.emplace_back(name, rollNo, cgpa, attendance);
+    
+        // Append to the file
+        ofstream out(filename, ios::app);
+        if (out.is_open()) {
+            out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
+            out.close();
+            cout << "Student hired successfully.\n";
+        } else {
+            cout << "Error updating student file.\n";
         }
     }
+    
+    void RemoveStudent(vector<Student>& students, const string& filename) {
+        if (students.empty()) {
+            cout << "No students to remove.\n";
+            return;
+        }
+    
+        vector<string> names;
+        for (const auto& s : students) {
+            names.push_back(s.name);
+        }
+    
+        int index = getIndexByName(names, "Select a student to remove:");
+        if (index < 0 || index >= (int)students.size()) {
+            cout << "Invalid selection.\n";
+            return;
+        }
+    
+        string studentToRemove = students[index].name;
+        students.erase(students.begin() + index);
+    
+        ofstream out(filename);
+        if (!out.is_open()) {
+            cout << "Error updating student file.\n";
+            return;
+        }
+    
+        for (const auto& s : students) {
+            out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
+        }
+    
+        out.close();
+        cout << "Student " << studentToRemove << " removed successfully.\n";
+    }
+    
 };
 
 // Writes attendance report to file
@@ -378,8 +473,29 @@ void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& facult
         students.emplace_back(name, rollNo, cgpa, attendance);
     }
     in.close();
+}
 
-    writeAttendanceReport(students);
+void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students) {
+    ofstream out(filename);
+    if (!out) {
+        cerr << "Error opening file for writing: " << filename << endl;
+        return;
+    }
+    
+    out << hods.size() << " " << faculties.size() << " " << students.size() << "\n";
+    // Write HOD data
+    for (const auto& hod : hods) {
+        out << hod.name << "," << hod.passkey << "\n";
+    }
+    // Write Faculty data
+    for (const auto& faculty : faculties) {
+        out << faculty.name << "," << faculty.passkey << "\n";
+    }
+    // Write Student data
+    for (const auto& student : students) {
+        out << student.name << "," << student.rollNo << "," << student.cgpa << "," << student.attendance << "\n";
+    }
+    out.close();
 }
 
 int main() {
@@ -395,7 +511,7 @@ int main() {
     HOD& hod = hods[0];
 
     while (true) {
-        cout << "\n=== ROLE SELECTION MENU ===\n";
+        cout << "\n=== MAIN MENU ===\n";
         cout << "1. Student Login\n";
         cout << "2. Faculty Login\n";
         cout << "3. HOD Login\n";
@@ -499,21 +615,29 @@ int main() {
                         cout << "3. View All Files\n";
                         cout << "4. Hire Faculty\n";
                         cout << "5. Fire Faculty\n";
-                        cout << "6. Mark Attendance\n";
+                        cout << "6. Add a student\n";
+                        cout << "7. Remove a student\n";
+                        cout << "8. Mark Attendance\n";
                         cout << "0. Back\n";
                         cout << "Enter choice: ";
                         int hodChoice;
                         cin >> hodChoice;
 
-                        if (hodChoice == 0) break;
-
+                        if (hodChoice == 0) 
+                        {
+                            saveData("meow.txt", hods, faculties, students);
+                            break;
+                        }
+                        
                         switch (hodChoice) {
                             case 1: hod.viewAllStudentData(students); break;
                             case 2: hod.viewAllFacultyData(faculties); break;
                             case 3: hod.viewAllFiles(students, faculties); break;
                             case 4: hod.hireFaculty(faculties, "meow.txt"); break;
                             case 5: hod.fireFaculty(faculties, "meow.txt"); break;
-                            case 6: markAttendance(students); break;
+                            case 6: hod.AddStudent(students, "meow.txt"); break;
+                            case 7: hod.RemoveStudent(students, "meow.txt"); break;
+                            case 8: markAttendance(students); break;
                             default: cout << "Invalid option.\n"; break;
                         }
                     }
