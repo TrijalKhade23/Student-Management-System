@@ -294,7 +294,7 @@ void markAttendance(vector<Student>& students) {
 }
 
 // Loads data from file "meow.txt"
-void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& faculties, vector<Student>& students) {
+/*void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& faculties, vector<Student>& students) {
     ifstream in(filename);
     if (!in) {
         cerr << "Failed to open file: " << filename << endl;
@@ -333,7 +333,68 @@ void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& facult
     // For simplicity, this example does not reload uploaded files on startup.
 
     writeAttendanceReport(students);
+}*/
+void ignoreLine(std::istream& in, std::streamsize maxNewLine = 1) {
+    char ch;
+    std::streamsize count = 0;
+    while (count < maxNewLine && in.get(ch)) {  // Read char by char
+        if (ch == '\n') {                      // Stop if newline found
+            break;
+        }
+        ++count;                              // Count chars ignored
+    }
 }
+void loadData(const std::string& filename, 
+    std::vector<HOD>& hods, 
+    std::vector<Faculty>& faculties, 
+    std::vector<Student>& students) 
+{
+std::ifstream in(filename);
+if (!in) {
+std::cerr << "Failed to open file: " << filename << std::endl;
+return;
+}
+
+int hodCount, facCount, stuCount;
+in >> hodCount >> facCount >> stuCount;
+ignoreLine(std::numeric_limits<std::streamsize>::max(), '\n');
+
+std::string line;
+
+// Load HODs
+for (int i = 0; i < hodCount; ++i) {
+std::getline(in, line);
+auto comma = line.find(',');
+hods.emplace_back(line.substr(0, comma), line.substr(comma + 1));
+}
+
+// Load Faculties
+for (int i = 0; i < facCount; ++i) {
+std::getline(in, line);
+auto comma = line.find(',');
+faculties.emplace_back(line.substr(0, comma), line.substr(comma + 1));
+}
+
+// Load Students
+for (int i = 0; i < stuCount; ++i) {
+std::getline(in, line);
+size_t pos1 = line.find(',');
+size_t pos2 = line.find(',', pos1 + 1);
+size_t pos3 = line.find(',', pos2 + 1);
+
+std::string name = line.substr(0, pos1);
+int rollNo = std::stoi(line.substr(pos1 + 1, pos2 - pos1 - 1));
+float cgpa = std::stof(line.substr(pos2 + 1, pos3 - pos2 - 1));
+int attendance = std::stoi(line.substr(pos3 + 1));
+
+students.emplace_back(name, rollNo, cgpa, attendance);
+}
+
+in.close();
+
+writeAttendanceReport(students);
+}
+
 
 // Helper function to get index by name from a list with prompt
 int getIndexByName(const vector<string>& names, const string& prompt) {
