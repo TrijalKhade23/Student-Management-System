@@ -304,60 +304,83 @@ public:
         }
     }
 
-    void hireFaculty(vector<Faculty>& faculties, const string& filename) {
-        string name, passkey;
-        cout << "Enter name of new faculty: ";
-        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. 
-        getline(cin, name);
-        cout << "Enter passkey for new faculty: ";
-        cin >> passkey;
-        faculties.emplace_back(name, caesarCipher(passkey));
-        ofstream out(filename, ios::app);
-        if (out.is_open()) {
+    void hireFaculty(std::vector<Faculty>& faculties, const std::string& filename) {
+        try {
+            std::string name, passkey;
+            std::cout << "Enter name of new faculty: ";
+            std::cin.ignore(1000, '\n'); // flush input buffer
+            std::getline(std::cin, name);
+    
+            if (name.empty()) {
+                throw std::runtime_error("Faculty name cannot be empty.");
+            }
+    
+            std::cout << "Enter passkey for new faculty: ";
+            std::cin >> passkey;
+    
+            if (passkey.empty()) {
+                throw std::runtime_error("Passkey cannot be empty.");
+            }
+    
+            // Add to vector
+            faculties.emplace_back(name, caesarCipher(passkey));
+    
+            // Append to file
+            std::ofstream out(filename, std::ios::app);
+            if (!out.is_open()) {
+                throw std::ios_base::failure("Error opening faculty file for appending.");
+            }
+    
             out << name << "," << caesarCipher(passkey) << "\n";
             out.close();
-            cout << "Faculty hired successfully.\n";
-        } else {
-            cout << "Error updating faculty file.\n";
+    
+            std::cout << "Faculty hired successfully.\n";
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Failed to hire faculty: " << e.what() << '\n';
         }
     }
 
-    void fireFaculty(vector<Faculty>& faculties, const string& filename) {
-        if (faculties.empty()) {
-            cout << "No faculty to remove.\n";
-            return;
+    void fireFaculty(std::vector<Faculty>& faculties, const std::string& filename) {
+        try {
+            if (faculties.empty()) {
+                throw std::runtime_error("No faculty to remove.");
+            }
+    
+            // List all faculty names
+            std::vector<std::string> names;
+            for (const auto& f : faculties) {
+                names.push_back(f.name);
+            }
+    
+            // Get index of faculty to remove
+            int index = getIndexByName(names, "Select a faculty to remove:");
+            if (index < 0 || index >= static_cast<int>(faculties.size())) {
+                throw std::out_of_range("Invalid selection.");
+            }
+    
+            // Remove the selected faculty from the list
+            std::string facultyToRemove = faculties[index].name;
+            faculties.erase(faculties.begin() + index);
+    
+            // Open the file for updating
+            std::ofstream out(filename);
+            if (!out.is_open()) {
+                throw std::ios_base::failure("Error updating faculty file: cannot open file.");
+            }
+    
+            // Write remaining faculty data to file
+            out << faculties.size() << "\n";
+            for (const auto& f : faculties) {
+                out << f.name << "," << f.passkey << "\n";
+            }
+            out.close();
+    
+            std::cout << "Faculty " << facultyToRemove << " removed successfully.\n";
         }
-    
-        // List all faculty names
-        vector<string> names;
-        for (const auto& f : faculties) names.push_back(f.name);
-    
-        // Get index of faculty to remove
-        int index = getIndexByName(names, "Select a faculty to remove:");
-        if (index < 0 || index >= (int)faculties.size()) {
-            cout << "Invalid selection.\n";
-            return;
+        catch (const std::exception& e) {
+            std::cerr << "Operation failed: " << e.what() << '\n';
         }
-    
-        // Remove the selected faculty from the list
-        string facultyToRemove = faculties[index].name;
-        faculties.erase(faculties.begin() + index);
-    
-        // Open the file for updating
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating faculty file.\n";
-            return;
-        }
-    
-        // Write remaining faculty data to file
-        out << faculties.size() << "\n";  // Write the new number of faculties
-        for (const auto& f : faculties) {
-            out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
-        }
-    
-        out.close();
-        cout << "Faculty " << facultyToRemove << " removed successfully.\n";
     }
 
     void AddStudent(vector<Student>& students, const string& filename) {
