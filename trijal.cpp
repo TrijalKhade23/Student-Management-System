@@ -16,7 +16,7 @@ struct File {
 
 string caesarCipher(string text) {
     for (char& c : text) {
-        c = (c + 5);  // Shift within the alphabet
+        c = (c + 5);  // Shift within the alphabet to encrypt the passkey
         }
     return text;
 }
@@ -36,6 +36,7 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
+        try{
         if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
         {
             uploadedFiles.push_back({fname, "Student"});
@@ -45,11 +46,15 @@ public:
                 out.close();
                 cout << "Student uploaded file: " << fname << endl;
             } else {
-                cout << "Error opening student file storage." << endl;
+                throw "Error opening student file storage.";
             }
         }
         else{
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
+            throw "Error Uploading File. Check File Name!!!";
+        }
+        }
+        catch(const char* msg){
+            cout << msg << endl;
         }
     }
 
@@ -66,12 +71,17 @@ public:
                 newFiles.push_back(uploadedFiles[i]);
             }
         }
+        try{
         if (found) {
             uploadedFiles = newFiles;
             updateFileStorage("student_files.txt", uploadedFiles, name);
             cout << "Deleted file: " << fname << endl;
         } else {
-            cout << "File not found!" << endl;
+            throw "File not found!";
+        }
+        }
+        catch(const char* msg){
+            cout << msg << endl;
         }
     }
 
@@ -129,23 +139,27 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Faculty"});
-            ofstream out("faculty_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Faculty uploaded file: " << fname << endl;
-            } else {
-                cout << "Error opening faculty file storage." << endl;
+        try{
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Faculty"});
+                ofstream out("faculty_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Faculty uploaded file: " << fname << endl;
+                } else {
+                    throw "Error opening faculty file storage.";
+                }
+            }
+            else{
+                throw "Error Uploading File. Check File Name!!!";
+            }
+            }
+            catch(const char* msg){
+                cout << msg << endl;
             }
         }
-        else
-        {
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
-        }
-    }
 
     void deleteFile() {
         string fname;
@@ -160,13 +174,18 @@ public:
                 newFiles.push_back(uploadedFiles[i]);
             }
         }
-        if (found) {
-            uploadedFiles = newFiles;
-            updateFileStorage("faculty_files.txt", uploadedFiles, name);
-            cout << "Deleted file: " << fname << endl;
-        } else {
-            cout << "File not found!" << endl;
-        }
+        try{
+            if (found) {
+                uploadedFiles = newFiles;
+                updateFileStorage("faculty_files.txt", uploadedFiles, name);
+                cout << "Deleted file: " << fname << endl;
+            } else {
+                throw "File not found!";
+            }
+            }
+            catch(const char* msg){
+                cout << msg << endl;
+            }
     }
 
     void viewStudentFiles(const vector<Student>& students) const {
@@ -228,8 +247,10 @@ int getIndexByName(const vector<string>& names, const string& prompt) {
         cout << i << ". " << names[i] << endl;
     }
     int choice;
+    // adding exeption handling??
     cout << "Enter choice: ";
-    while (!(cin >> choice) || choice < 0 || choice >= (int)names.size()) {
+    cin >> choice;
+    while (!(choice) || choice < 0 || choice >= (int)names.size()) {
         cout << "Invalid choice. Enter a number between 0 and " << names.size() - 1 << ": ";
         cin.clear();
         cin.ignore(1000, '\n');
@@ -286,7 +307,7 @@ public:
     void hireFaculty(vector<Faculty>& faculties, const string& filename) {
         string name, passkey;
         cout << "Enter name of new faculty: ";
-        cin.ignore(1000, '\n'); // flush input buffer
+        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. file
         getline(cin, name);
         cout << "Enter passkey for new faculty: ";
         cin >> passkey;
