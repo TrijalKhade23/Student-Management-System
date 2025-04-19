@@ -304,40 +304,21 @@ public:
         }
     }
 
-    void hireFaculty(std::vector<Faculty>& faculties, const std::string& filename) {
-        try {
-            std::string name, passkey;
-            std::cout << "Enter name of new faculty: ";
-            std::cin.ignore(1000, '\n'); // flush input buffer
-            std::getline(std::cin, name);
-    
-            if (name.empty()) {
-                throw std::runtime_error("Faculty name cannot be empty.");
-            }
-    
-            std::cout << "Enter passkey for new faculty: ";
-            std::cin >> passkey;
-    
-            if (passkey.empty()) {
-                throw std::runtime_error("Passkey cannot be empty.");
-            }
-    
-            // Add to vector
-            faculties.emplace_back(name, caesarCipher(passkey));
-    
-            // Append to file
-            std::ofstream out(filename, std::ios::app);
-            if (!out.is_open()) {
-                throw std::ios_base::failure("Error opening faculty file for appending.");
-            }
-    
+    void hireFaculty(vector<Faculty>& faculties, const string& filename) {
+        string name, passkey;
+        cout << "Enter name of new faculty: ";
+        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. 
+        getline(cin, name);
+        cout << "Enter passkey for new faculty: ";
+        cin >> passkey;
+        faculties.emplace_back(name, caesarCipher(passkey));
+        ofstream out(filename, ios::app);
+        if (out.is_open()) {
             out << name << "," << caesarCipher(passkey) << "\n";
             out.close();
-    
-            std::cout << "Faculty hired successfully.\n";
-        }
-        catch (const std::exception& e) {
-            std::cerr << "Failed to hire faculty: " << e.what() << '\n';
+            cout << "Faculty hired successfully.\n";
+        } else {
+            cout << "Error updating faculty file.\n";
         }
     }
 
@@ -405,49 +386,54 @@ public:
     
         // Append to the file
         ofstream out(filename, ios::app);
+        try{
         if (out.is_open()) {
             out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
             out.close();
             cout << "Student hired successfully.\n";
         } else {
-            cout << "Error updating student file.\n";
+            throw "Error updating student file.";
+        }}
+        catch(const char* msg){
+            cout << msg << endl;
         }
     }
     
-    void RemoveStudent(vector<Student>& students, const string& filename) {
-        if (students.empty()) {
-            cout << "No students to remove.\n";
-            return;
+    void RemoveStudent(std::vector<Student>& students, const std::string& filename) {
+        try {
+            if (students.empty()) {
+                throw std::runtime_error("No students to remove.");
+            }
+    
+            std::vector<std::string> names;
+            for (const auto& s : students) {
+                names.push_back(s.name);
+            }
+    
+            int index = getIndexByName(names, "Select a student to remove:");
+            if (index < 0 || index >= static_cast<int>(students.size())) {
+                throw std::out_of_range("Invalid selection.");
+            }
+    
+            std::string studentToRemove = students[index].name;
+            students.erase(students.begin() + index);
+    
+            std::ofstream out(filename);
+            if (!out.is_open()) {
+                throw std::ios_base::failure("Error updating student file.");
+            }
+    
+            for (const auto& s : students) {
+                out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
+            }
+            out.close();
+    
+            std::cout << "Student " << studentToRemove << " removed successfully.\n";
         }
-    
-        vector<string> names;
-        for (const auto& s : students) {
-            names.push_back(s.name);
+        catch (const std::exception& e) {
+            std::cerr << "Failed to remove student: " << e.what() << '\n';
         }
-    
-        int index = getIndexByName(names, "Select a student to remove:");
-        if (index < 0 || index >= (int)students.size()) {
-            cout << "Invalid selection.\n";
-            return;
-        }
-    
-        string studentToRemove = students[index].name;
-        students.erase(students.begin() + index);
-    
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating student file.\n";
-            return;
-        }
-    
-        for (const auto& s : students) {
-            out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
-        }
-    
-        out.close();
-        cout << "Student " << studentToRemove << " removed successfully.\n";
     }
-    
 };
 
 // Writes attendance report to file
