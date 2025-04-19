@@ -434,6 +434,8 @@ public:
             std::cerr << "Failed to remove student: " << e.what() << '\n';
         }
     }
+    
+    
 };
 
 // Writes attendance report to file
@@ -505,29 +507,52 @@ void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& facult
     in.close();
 }
 
-void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students) {
-    ofstream out(filename);
-    if (!out) {
-        cerr << "Error opening file for writing: " << filename << endl;
-        return;
-    }
-    
-    out << hods.size() << " " << faculties.size() << " " << students.size() << "\n";
-    // Write HOD data
-    for (const auto& hod : hods) {
-        out << hod.name << "," << hod.passkey << "\n";
-    }
-    // Write Faculty data
-    for (const auto& faculty : faculties) {
-        out << faculty.name << "," << faculty.passkey << "\n";
-    }
-    // Write Student data
-    for (const auto& student : students) {
-        out << student.name << "," << student.rollNo << "," << student.cgpa << "," << student.attendance << "\n";
-    }
-    out.close();
-}
+void saveData(const std::string& filename, 
+              const std::vector<HOD>& hods, 
+              const std::vector<Faculty>& faculties, 
+              const std::vector<Student>& students) 
+{
+    try {
+        std::ofstream out(filename);
+        if (!out.is_open()) {
+            throw std::ios_base::failure("Error opening file for writing: " + filename);
+        }
 
+        out << hods.size() << " " << faculties.size() << " " << students.size() << "\n";
+
+        // Write HOD data
+        for (const auto& hod : hods) {
+            out << hod.name << "," << hod.passkey << "\n";
+            if (!out) {
+                throw std::ios_base::failure("Failed to write HOD data.");
+            }
+        }
+
+        // Write Faculty data
+        for (const auto& faculty : faculties) {
+            out << faculty.name << "," << faculty.passkey << "\n";
+            if (!out) {
+                throw std::ios_base::failure("Failed to write Faculty data.");
+            }
+        }
+
+        // Write Student data
+        for (const auto& student : students) {
+            out << student.name << "," << student.rollNo << "," << student.cgpa << "," << student.attendance << "\n";
+            if (!out) {
+                throw std::ios_base::failure("Failed to write Student data.");
+            }
+        }
+
+        out.close();
+        if (out.fail()) {
+            throw std::ios_base::failure("Failed to close the file properly.");
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error saving data: " << e.what() << std::endl;
+    }
+}
 int main() {
     vector<Student> students;
     vector<Faculty> faculties;
