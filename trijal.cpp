@@ -307,7 +307,7 @@ public:
     void hireFaculty(vector<Faculty>& faculties, const string& filename) {
         string name, passkey;
         cout << "Enter name of new faculty: ";
-        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. file
+        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. 
         getline(cin, name);
         cout << "Enter passkey for new faculty: ";
         cin >> passkey;
