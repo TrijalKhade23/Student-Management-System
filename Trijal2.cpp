@@ -341,12 +341,17 @@ public:
         cin >> passkey;
         faculties.emplace_back(name, caesarCipher(passkey));
         ofstream out(filename, ios::app);
-        if (out.is_open()) {
-            out << name << "," << caesarCipher(passkey) << "\n";
-            out.close();
-            cout << "Faculty hired successfully.\n";
-        } else {
-            cout << "Error updating faculty file.\n";
+        try{
+            if (out.is_open()) {
+                out << name << "," << caesarCipher(passkey) << "\n";
+                out.close();
+                cout << "Faculty hired successfully.\n";
+            } else {
+                throw "Error updating faculty file.";
+            }
+        }
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
