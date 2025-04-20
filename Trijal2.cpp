@@ -351,41 +351,37 @@ public:
     }
 
     void fireFaculty(vector<Faculty>& faculties, const string& filename) {
-        if (faculties.empty()) {
-            cout << "No faculty to remove.\n";
-            return;
+        try{
+            if (faculties.empty()) {
+                throw "No faculty to remove.\n";
+            }
+            // List all faculty names
+            vector<string> names;
+            for (const auto& f : faculties) names.push_back(f.name);
+            // Get index of faculty to remove
+            int index = getIndexByName(names, "Select a faculty to remove:");
+            if (index < 0 || index >= (int)faculties.size()) {
+                throw "Invalid selection.\n";
+            }
+            // Remove the selected faculty from the list
+            string facultyToRemove = faculties[index].name;
+            faculties.erase(faculties.begin() + index);
+            // Open the file for updating
+            ofstream out(filename);
+            if (!out.is_open()) {
+                throw "Error updating faculty file.\n";
+            }
+            // Write remaining faculty data to file
+            out << faculties.size() << "\n";  // Write the new number of faculties
+            for (const auto& f : faculties) {
+                out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
+            }
+            out.close();
+            cout << "Faculty " << facultyToRemove << " removed successfully.\n";
         }
-    
-        // List all faculty names
-        vector<string> names;
-        for (const auto& f : faculties) names.push_back(f.name);
-    
-        // Get index of faculty to remove
-        int index = getIndexByName(names, "Select a faculty to remove:");
-        if (index < 0 || index >= (int)faculties.size()) {
-            cout << "Invalid selection.\n";
-            return;
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        // Remove the selected faculty from the list
-        string facultyToRemove = faculties[index].name;
-        faculties.erase(faculties.begin() + index);
-    
-        // Open the file for updating
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating faculty file.\n";
-            return;
-        }
-    
-        // Write remaining faculty data to file
-        out << faculties.size() << "\n";  // Write the new number of faculties
-        for (const auto& f : faculties) {
-            out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
-        }
-    
-        out.close();
-        cout << "Faculty " << facultyToRemove << " removed successfully.\n";
     }
 
     void AddStudent(vector<Student>& students, const string& filename) {
