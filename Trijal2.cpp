@@ -410,12 +410,17 @@ public:
     
         // Append to the file
         ofstream out(filename, ios::app);
-        if (out.is_open()) {
-            out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
-            out.close();
-            cout << "Student hired successfully.\n";
-        } else {
-            cout << "Error updating student file.\n";
+        try{
+            if (out.is_open()) {
+                out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
+                out.close();
+                cout << "Student added successfully.\n";
+            } else {
+                throw "Error updating student file.\n";
+            }
+        }
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
     
