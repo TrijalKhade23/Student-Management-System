@@ -474,11 +474,17 @@ void markAttendance(vector<Student>& students) {
     cout << "\n--- Mark Attendance (1 = Present, 0 = Absent) ---\n";
     for (auto& student : students) {
         int present;
-        cout << "Is " << student.name << " present? (1/0): ";
-        cin >> present;
-        while (present != 0 && present != 1) {
-            cout << "Invalid input. Enter 1 for present or 0 for absent: ";
-            cin >> present;
+        while(true){
+            try{
+                cout << "Is " << student.name << " present? (1/0): ";
+                cin >> present;
+                if(present != 0 && present != 1)
+                    throw "Invalid input. Enter 1 for present or 0 for absent: ";
+                break;
+            }
+            catch(const char* e){
+                cout<<e<<endl;
+            }
         }
         if (present == 1) student.attendance = (float)((student.attendance + 1)/101)*100;
         else if (present == 0) student.attendance = (float)(student.attendance/101)*100;
