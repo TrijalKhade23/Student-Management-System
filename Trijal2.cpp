@@ -420,39 +420,39 @@ public:
     }
     
     void RemoveStudent(vector<Student>& students, const string& filename) {
-        if (students.empty()) {
-            cout << "No students to remove.\n";
-            return;
+        try{
+            if (students.empty()) {
+                throw "No students to remove.\n";
+            }
+            vector<string> names;
+            for (const auto& s : students) {
+                names.push_back(s.name);
+            }
+        
+            int index = getIndexByName(names, "Select a student to remove:");
+            if (index < 0 || index >= (int)students.size()) {
+                throw "Invalid selection.\n";
+            }
+        
+            string studentToRemove = students[index].name;
+            students.erase(students.begin() + index);
+        
+            ofstream out(filename);
+            if (!out.is_open()) {
+                throw "Error updating student file.\n";
+            }
+        
+            for (const auto& s : students) {
+                out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
+            }
+        
+            out.close();
+            cout << "Student " << studentToRemove << " removed successfully.\n";
         }
-    
-        vector<string> names;
-        for (const auto& s : students) {
-            names.push_back(s.name);
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        int index = getIndexByName(names, "Select a student to remove:");
-        if (index < 0 || index >= (int)students.size()) {
-            cout << "Invalid selection.\n";
-            return;
-        }
-    
-        string studentToRemove = students[index].name;
-        students.erase(students.begin() + index);
-    
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating student file.\n";
-            return;
-        }
-    
-        for (const auto& s : students) {
-            out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
-        }
-    
-        out.close();
-        cout << "Student " << studentToRemove << " removed successfully.\n";
     }
-    
 };
 
 // Writes attendance report to file
