@@ -36,20 +36,25 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Student"});
-            ofstream out("student_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Student uploaded file: " << fname << endl;
-            } else {
-                cout << "Error opening student file storage." << endl;
+        try{
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Student"});
+                ofstream out("student_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Student uploaded file: " << fname << endl;
+                } else {
+                    throw "Error opening student file storage." ;
+                }
+            }
+            else{
+                throw "Error Uploading File. Check File Name!!!";
             }
         }
-        else{
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
@@ -129,21 +134,26 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Faculty"});
-            ofstream out("faculty_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Faculty uploaded file: " << fname << endl;
-            } else {
-                cout << "Error opening faculty file storage." << endl;
+        try{
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Faculty"});
+                ofstream out("faculty_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Faculty uploaded file: " << fname << endl;
+                } else {
+                    throw "Error opening faculty file storage." ;
+                }
+            }
+            else
+            {
+                throw "Error Uploading File. Check File Name!!!";
             }
         }
-        else
-        {
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
@@ -191,39 +201,36 @@ public:
         string searchKey = studentName + "," + filename;
     
         ifstream fin1("Student_files.txt");
-        if (!fin1.is_open()) {
-            cout << "Failed to open Student_files.txt" << endl;
-            return; // Exit early if index file doesn't open
-        }
-    
-        string fileNameInList;
-        bool found = false;
-    
-        while (getline(fin1, fileNameInList)) {
-            if (fileNameInList == searchKey) {
-                found = true;
-                break;
+        try{
+            if (!fin1.is_open()) {
+                throw "Failed to open Student_files.txt";
+            }
+            string fileNameInList;
+            bool found = false;
+            while (getline(fin1, fileNameInList)) {
+                if (fileNameInList == searchKey) {
+                    found = true;
+                    break;
+                }
+            }
+            fin1.close();
+            if (!found) {
+                throw "File not listed in Student_files.txt\n";\
+            }
+            ifstream fin(filename);
+            if (!fin.is_open()) {
+                throw "File Not Found\n";
+            }
+            cout << "Contents of " << filename << " -By " << studentName<<":\n";
+            string line;
+            while (getline(fin, line)) {
+                cout << line << endl;
+                fin.close();
             }
         }
-        fin1.close();
-    
-        if (!found) {
-            cout << "File not listed in Student_files.txt\n";
-            return;
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        ifstream fin(filename);
-        if (!fin.is_open()) {
-            cout << "File Not Found\n";
-            return;
-        }
-    
-        cout << "Contents of " << filename << " -By " << studentName<<":\n";
-        string line;
-        while (getline(fin, line)) {
-            cout << line << endl;
-        }
-        fin.close();
     }
     
 
@@ -341,51 +348,52 @@ public:
         cin >> passkey;
         faculties.emplace_back(name, caesarCipher(passkey));
         ofstream out(filename, ios::app);
-        if (out.is_open()) {
-            out << name << "," << caesarCipher(passkey) << "\n";
-            out.close();
-            cout << "Faculty hired successfully.\n";
-        } else {
-            cout << "Error updating faculty file.\n";
+        try{
+            if (out.is_open()) {
+                out << name << "," << caesarCipher(passkey) << "\n";
+                out.close();
+                cout << "Faculty hired successfully.\n";
+            } else {
+                throw "Error updating faculty file.";
+            }
+        }
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
     void fireFaculty(vector<Faculty>& faculties, const string& filename) {
-        if (faculties.empty()) {
-            cout << "No faculty to remove.\n";
-            return;
+        try{
+            if (faculties.empty()) {
+                throw "No faculty to remove.\n";
+            }
+            // List all faculty names
+            vector<string> names;
+            for (const auto& f : faculties) names.push_back(f.name);
+            // Get index of faculty to remove
+            int index = getIndexByName(names, "Select a faculty to remove:");
+            if (index < 0 || index >= (int)faculties.size()) {
+                throw "Invalid selection.\n";
+            }
+            // Remove the selected faculty from the list
+            string facultyToRemove = faculties[index].name;
+            faculties.erase(faculties.begin() + index);
+            // Open the file for updating
+            ofstream out(filename);
+            if (!out.is_open()) {
+                throw "Error updating faculty file.\n";
+            }
+            // Write remaining faculty data to file
+            out << faculties.size() << "\n";  // Write the new number of faculties
+            for (const auto& f : faculties) {
+                out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
+            }
+            out.close();
+            cout << "Faculty " << facultyToRemove << " removed successfully.\n";
         }
-    
-        // List all faculty names
-        vector<string> names;
-        for (const auto& f : faculties) names.push_back(f.name);
-    
-        // Get index of faculty to remove
-        int index = getIndexByName(names, "Select a faculty to remove:");
-        if (index < 0 || index >= (int)faculties.size()) {
-            cout << "Invalid selection.\n";
-            return;
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        // Remove the selected faculty from the list
-        string facultyToRemove = faculties[index].name;
-        faculties.erase(faculties.begin() + index);
-    
-        // Open the file for updating
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating faculty file.\n";
-            return;
-        }
-    
-        // Write remaining faculty data to file
-        out << faculties.size() << "\n";  // Write the new number of faculties
-        for (const auto& f : faculties) {
-            out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
-        }
-    
-        out.close();
-        cout << "Faculty " << facultyToRemove << " removed successfully.\n";
     }
 
     void AddStudent(vector<Student>& students, const string& filename) {
@@ -410,49 +418,54 @@ public:
     
         // Append to the file
         ofstream out(filename, ios::app);
-        if (out.is_open()) {
-            out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
-            out.close();
-            cout << "Student hired successfully.\n";
-        } else {
-            cout << "Error updating student file.\n";
+        try{
+            if (out.is_open()) {
+                out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
+                out.close();
+                cout << "Student added successfully.\n";
+            } else {
+                throw "Error updating student file.\n";
+            }
+        }
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
     
     void RemoveStudent(vector<Student>& students, const string& filename) {
-        if (students.empty()) {
-            cout << "No students to remove.\n";
-            return;
+        try{
+            if (students.empty()) {
+                throw "No students to remove.\n";
+            }
+            vector<string> names;
+            for (const auto& s : students) {
+                names.push_back(s.name);
+            }
+        
+            int index = getIndexByName(names, "Select a student to remove:");
+            if (index < 0 || index >= (int)students.size()) {
+                throw "Invalid selection.\n";
+            }
+        
+            string studentToRemove = students[index].name;
+            students.erase(students.begin() + index);
+        
+            ofstream out(filename);
+            if (!out.is_open()) {
+                throw "Error updating student file.\n";
+            }
+        
+            for (const auto& s : students) {
+                out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
+            }
+        
+            out.close();
+            cout << "Student " << studentToRemove << " removed successfully.\n";
         }
-    
-        vector<string> names;
-        for (const auto& s : students) {
-            names.push_back(s.name);
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        int index = getIndexByName(names, "Select a student to remove:");
-        if (index < 0 || index >= (int)students.size()) {
-            cout << "Invalid selection.\n";
-            return;
-        }
-    
-        string studentToRemove = students[index].name;
-        students.erase(students.begin() + index);
-    
-        ofstream out(filename);
-        if (!out.is_open()) {
-            cout << "Error updating student file.\n";
-            return;
-        }
-    
-        for (const auto& s : students) {
-            out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
-        }
-    
-        out.close();
-        cout << "Student " << studentToRemove << " removed successfully.\n";
     }
-    
 };
 
 // Writes attendance report to file
@@ -474,11 +487,17 @@ void markAttendance(vector<Student>& students) {
     cout << "\n--- Mark Attendance (1 = Present, 0 = Absent) ---\n";
     for (auto& student : students) {
         int present;
-        cout << "Is " << student.name << " present? (1/0): ";
-        cin >> present;
-        while (present != 0 && present != 1) {
-            cout << "Invalid input. Enter 1 for present or 0 for absent: ";
-            cin >> present;
+        while(true){
+            try{
+                cout << "Is " << student.name << " present? (1/0): ";
+                cin >> present;
+                if(present != 0 && present != 1)
+                    throw "Invalid input. Enter 1 for present or 0 for absent: ";
+                break;
+            }
+            catch(const char* e){
+                cout<<e<<endl;
+            }
         }
         if (present == 1) student.attendance = (float)((student.attendance + 1)/101)*100;
         else if (present == 0) student.attendance = (float)(student.attendance/101)*100;
