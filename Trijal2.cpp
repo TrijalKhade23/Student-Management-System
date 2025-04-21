@@ -36,20 +36,25 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Student"});
-            ofstream out("student_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Student uploaded file: " << fname << endl;
-            } else {
-                cout << "Error opening student file storage." << endl;
+        try{
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Student"});
+                ofstream out("student_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Student uploaded file: " << fname << endl;
+                } else {
+                    throw "Error opening student file storage." ;
+                }
+            }
+            else{
+                throw "Error Uploading File. Check File Name!!!";
             }
         }
-        else{
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
@@ -129,21 +134,26 @@ public:
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Faculty"});
-            ofstream out("faculty_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Faculty uploaded file: " << fname << endl;
-            } else {
-                cout << "Error opening faculty file storage." << endl;
+        try{
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Faculty"});
+                ofstream out("faculty_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Faculty uploaded file: " << fname << endl;
+                } else {
+                    throw "Error opening faculty file storage." ;
+                }
+            }
+            else
+            {
+                throw "Error Uploading File. Check File Name!!!";
             }
         }
-        else
-        {
-            cout << "Error Uploading File. Check File Name!!!"<<endl;
+        catch(const char* e){
+            cout<<e<<endl;
         }
     }
 
@@ -191,39 +201,36 @@ public:
         string searchKey = studentName + "," + filename;
     
         ifstream fin1("Student_files.txt");
-        if (!fin1.is_open()) {
-            cout << "Failed to open Student_files.txt" << endl;
-            return; // Exit early if index file doesn't open
-        }
-    
-        string fileNameInList;
-        bool found = false;
-    
-        while (getline(fin1, fileNameInList)) {
-            if (fileNameInList == searchKey) {
-                found = true;
-                break;
+        try{
+            if (!fin1.is_open()) {
+                throw "Failed to open Student_files.txt";
+            }
+            string fileNameInList;
+            bool found = false;
+            while (getline(fin1, fileNameInList)) {
+                if (fileNameInList == searchKey) {
+                    found = true;
+                    break;
+                }
+            }
+            fin1.close();
+            if (!found) {
+                throw "File not listed in Student_files.txt\n";\
+            }
+            ifstream fin(filename);
+            if (!fin.is_open()) {
+                throw "File Not Found\n";
+            }
+            cout << "Contents of " << filename << " -By " << studentName<<":\n";
+            string line;
+            while (getline(fin, line)) {
+                cout << line << endl;
+                fin.close();
             }
         }
-        fin1.close();
-    
-        if (!found) {
-            cout << "File not listed in Student_files.txt\n";
-            return;
+        catch(const char* e){
+            cout<<e<<endl;
         }
-    
-        ifstream fin(filename);
-        if (!fin.is_open()) {
-            cout << "File Not Found\n";
-            return;
-        }
-    
-        cout << "Contents of " << filename << " -By " << studentName<<":\n";
-        string line;
-        while (getline(fin, line)) {
-            cout << line << endl;
-        }
-        fin.close();
     }
     
 
