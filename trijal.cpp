@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <sstream>
+#include <omp.h>
 using namespace std;
 
 class Faculty;
@@ -16,7 +18,7 @@ struct File {
 
 string caesarCipher(string text) {
     for (char& c : text) {
-        c = (c + 5);  // Shift within the alphabet to encrypt the passkey
+        c = (c + 5);  // Shift within the alphabet
         }
     return text;
 }
@@ -30,30 +32,31 @@ public:
     float attendance;
     vector<File> uploadedFiles;
 
+    // Parameterized Constructor to load student data
     Student(string n, int r, float c, float a) : name(n), rollNo(r), cgpa(c), attendance(a) {}
 
     void uploadFile() {
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        try{
-        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-        {
-            uploadedFiles.push_back({fname, "Student"});
-            ofstream out("student_files.txt", ios::app);
-            if (out.is_open()) {
-                out << name << "," << fname << "\n";
-                out.close();
-                cout << "Student uploaded file: " << fname << endl;
-            } else {
-                throw "Error opening student file storage.";
+        try {
+            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+            {
+                uploadedFiles.push_back({fname, "Student"});
+                ofstream out("student_files.txt", ios::app);
+                if (out.is_open()) {
+                    out << name << "," << fname << "\n";
+                    out.close();
+                    cout << "Student uploaded file: " << fname << endl;
+                } else {
+                    throw"Error opening student file storage.";
+                }
+            }
+            else{
+                throw "Error Uploading File. Check File Name!!!";
             }
         }
-        else{
-            throw "Error Uploading File. Check File Name!!!";
-        }
-        }
-        catch(const char* msg){
+        catch (const char* msg) {
             cout << msg << endl;
         }
     }
@@ -71,25 +74,26 @@ public:
                 newFiles.push_back(uploadedFiles[i]);
             }
         }
-        try{
-        if (found) {
-            uploadedFiles = newFiles;
-            updateFileStorage("student_files.txt", uploadedFiles, name);
-            cout << "Deleted file: " << fname << endl;
-        } else {
-            throw "File not found!";
+        try {
+            if (found) {
+                uploadedFiles = newFiles;
+                updateFileStorage("student_files.txt", uploadedFiles, name);
+                cout << "Deleted file: " << fname << endl;
+            } else {
+                throw "File not found!";
+            }
         }
-        }
-        catch(const char* msg){
-            cout << msg << endl;
+        catch (const char* msg)
+        {
+            cout << msg <<endl;
         }
     }
 
-    void viewAttendance() const {
+    inline void viewAttendance() const {
         cout << "Attendance for " << name << ": " << attendance << "%\n";
     }
 
-    void viewCGPA() const {
+    inline void viewCGPA() const {
         cout << "CGPA for " << name << ": " << cgpa << "\n";
     }
 
@@ -135,31 +139,28 @@ public:
 
     friend void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students);
     friend class HOD;
+
     void uploadFile() {
         string fname;
         cout << "Enter file name to upload: ";
         cin >> fname;
-        try{
-            if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
-            {
-                uploadedFiles.push_back({fname, "Faculty"});
-                ofstream out("faculty_files.txt", ios::app);
-                if (out.is_open()) {
-                    out << name << "," << fname << "\n";
-                    out.close();
-                    cout << "Faculty uploaded file: " << fname << endl;
-                } else {
-                    throw "Error opening faculty file storage.";
-                }
-            }
-            else{
-                throw "Error Uploading File. Check File Name!!!";
-            }
-            }
-            catch(const char* msg){
-                cout << msg << endl;
+        if (fname.size() >= 4 && fname.substr(fname.size() - 4) == ".txt")
+        {
+            uploadedFiles.push_back({fname, "Faculty"});
+            ofstream out("faculty_files.txt", ios::app);
+            if (out.is_open()) {
+                out << name << "," << fname << "\n";
+                out.close();
+                cout << "Faculty uploaded file: " << fname << endl;
+            } else {
+                cout << "Error opening faculty file storage." << endl;
             }
         }
+        else
+        {
+            cout << "Error Uploading File. Check File Name!!!"<<endl;
+        }
+    }
 
     void deleteFile() {
         string fname;
@@ -174,18 +175,13 @@ public:
                 newFiles.push_back(uploadedFiles[i]);
             }
         }
-        try{
-            if (found) {
-                uploadedFiles = newFiles;
-                updateFileStorage("faculty_files.txt", uploadedFiles, name);
-                cout << "Deleted file: " << fname << endl;
-            } else {
-                throw "File not found!";
-            }
-            }
-            catch(const char* msg){
-                cout << msg << endl;
-            }
+        if (found) {
+            uploadedFiles = newFiles;
+            updateFileStorage("faculty_files.txt", uploadedFiles, name);
+            cout << "Deleted file: " << fname << endl;
+        } else {
+            cout << "File not found!" << endl;
+        }
     }
 
     void viewStudentFiles(const vector<Student>& students) const {
@@ -196,6 +192,55 @@ public:
             }
         }
     }
+
+    void readStudentFiles(const vector<Student>& students) const {
+        cout << "Reading Files uploaded by student:\n";
+        
+        string studentName, filename;
+        cout << "Enter Student Name: ";
+        cin.ignore(); // To clear leftover newline from previous input
+        getline(cin, studentName); // Use getline for full name
+        cout << "Enter File name: ";
+        cin >> filename;
+
+        string searchKey = studentName + "," + filename;
+    
+        ifstream fin1("Student_files.txt");
+        if (!fin1.is_open()) {
+            cout << "Failed to open Student_files.txt" << endl;
+            return; // Exit early if index file doesn't open
+        }
+    
+        string fileNameInList;
+        bool found = false;
+    
+        while (getline(fin1, fileNameInList)) {
+            if (fileNameInList == searchKey) {
+                found = true;
+                break;
+            }
+        }
+        fin1.close();
+    
+        if (!found) {
+            cout << "File not listed in Student_files.txt\n";
+            return;
+        }
+    
+        ifstream fin(filename);
+        if (!fin.is_open()) {
+            cout << "File Not Found\n";
+            return;
+        }
+    
+        cout << "\nContents of " << filename << " -By " << studentName<<":\n";
+        string line;
+        while (getline(fin, line)) {
+            cout << line << endl;
+        }
+        fin.close();
+    }
+    
 
     void viewAttendanceReport() const {
         ifstream in("attendance_report.txt");
@@ -247,10 +292,8 @@ int getIndexByName(const vector<string>& names, const string& prompt) {
         cout << i << ". " << names[i] << endl;
     }
     int choice;
-    // adding exeption handling??
     cout << "Enter choice: ";
-    cin >> choice;
-    while (!(choice) || choice < 0 || choice >= (int)names.size()) {
+    while (!(cin >> choice) || choice < 0 || choice >= (int)names.size()) {
         cout << "Invalid choice. Enter a number between 0 and " << names.size() - 1 << ": ";
         cin.clear();
         cin.ignore(1000, '\n');
@@ -307,7 +350,7 @@ public:
     void hireFaculty(vector<Faculty>& faculties, const string& filename) {
         string name, passkey;
         cout << "Enter name of new faculty: ";
-        cin.ignore(1000, '\n'); // flush input buffer, inbuilt function in istream h. 
+        cin.ignore(1000, '\n'); // flush input buffer
         getline(cin, name);
         cout << "Enter passkey for new faculty: ";
         cin >> passkey;
@@ -322,46 +365,42 @@ public:
         }
     }
 
-    void fireFaculty(std::vector<Faculty>& faculties, const std::string& filename) {
-        try {
-            if (faculties.empty()) {
-                throw std::runtime_error("No faculty to remove.");
-            }
-    
-            // List all faculty names
-            std::vector<std::string> names;
-            for (const auto& f : faculties) {
-                names.push_back(f.name);
-            }
-    
-            // Get index of faculty to remove
-            int index = getIndexByName(names, "Select a faculty to remove:");
-            if (index < 0 || index >= static_cast<int>(faculties.size())) {
-                throw std::out_of_range("Invalid selection.");
-            }
-    
-            // Remove the selected faculty from the list
-            std::string facultyToRemove = faculties[index].name;
-            faculties.erase(faculties.begin() + index);
-    
-            // Open the file for updating
-            std::ofstream out(filename);
-            if (!out.is_open()) {
-                throw std::ios_base::failure("Error updating faculty file: cannot open file.");
-            }
-    
-            // Write remaining faculty data to file
-            out << faculties.size() << "\n";
-            for (const auto& f : faculties) {
-                out << f.name << "," << f.passkey << "\n";
-            }
-            out.close();
-    
-            std::cout << "Faculty " << facultyToRemove << " removed successfully.\n";
+    void fireFaculty(vector<Faculty>& faculties, const string& filename) {
+        if (faculties.empty()) {
+            cout << "No faculty to remove.\n";
+            return;
         }
-        catch (const std::exception& e) {
-            std::cerr << "Operation failed: " << e.what() << '\n';
+    
+        // List all faculty names
+        vector<string> names;
+        for (const auto& f : faculties) names.push_back(f.name);
+    
+        // Get index of faculty to remove
+        int index = getIndexByName(names, "Select a faculty to remove:");
+        if (index < 0 || index >= (int)faculties.size()) {
+            cout << "Invalid selection.\n";
+            return;
         }
+    
+        // Remove the selected faculty from the list
+        string facultyToRemove = faculties[index].name;
+        faculties.erase(faculties.begin() + index);
+    
+        // Open the file for updating
+        ofstream out(filename);
+        if (!out.is_open()) {
+            cout << "Error updating faculty file.\n";
+            return;
+        }
+    
+        // Write remaining faculty data to file
+        out << faculties.size() << "\n";  // Write the new number of faculties
+        for (const auto& f : faculties) {
+            out << f.name << "," << f.passkey << "\n";  // Writing name and passkey
+        }
+    
+        out.close();
+        cout << "Faculty " << facultyToRemove << " removed successfully.\n";
     }
 
     void AddStudent(vector<Student>& students, const string& filename) {
@@ -386,55 +425,48 @@ public:
     
         // Append to the file
         ofstream out(filename, ios::app);
-        try{
         if (out.is_open()) {
             out << name << "," << rollNo << "," << cgpa << "," << attendance << "\n";
             out.close();
             cout << "Student hired successfully.\n";
         } else {
-            throw "Error updating student file.";
-        }}
-        catch(const char* msg){
-            cout << msg << endl;
+            cout << "Error updating student file.\n";
         }
     }
     
-    void RemoveStudent(std::vector<Student>& students, const std::string& filename) {
-        try {
-            if (students.empty()) {
-                throw std::runtime_error("No students to remove.");
-            }
-    
-            std::vector<std::string> names;
-            for (const auto& s : students) {
-                names.push_back(s.name);
-            }
-    
-            int index = getIndexByName(names, "Select a student to remove:");
-            if (index < 0 || index >= static_cast<int>(students.size())) {
-                throw std::out_of_range("Invalid selection.");
-            }
-    
-            std::string studentToRemove = students[index].name;
-            students.erase(students.begin() + index);
-    
-            std::ofstream out(filename);
-            if (!out.is_open()) {
-                throw std::ios_base::failure("Error updating student file.");
-            }
-    
-            for (const auto& s : students) {
-                out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
-            }
-            out.close();
-    
-            std::cout << "Student " << studentToRemove << " removed successfully.\n";
+    void RemoveStudent(vector<Student>& students, const string& filename) {
+        if (students.empty()) {
+            cout << "No students to remove.\n";
+            return;
         }
-        catch (const std::exception& e) {
-            std::cerr << "Failed to remove student: " << e.what() << '\n';
+    
+        vector<string> names;
+        for (const auto& s : students) {
+            names.push_back(s.name);
         }
+    
+        int index = getIndexByName(names, "Select a student to remove:");
+        if (index < 0 || index >= (int)students.size()) {
+            cout << "Invalid selection.\n";
+            return;
+        }
+    
+        string studentToRemove = students[index].name;
+        students.erase(students.begin() + index);
+    
+        ofstream out(filename);
+        if (!out.is_open()) {
+            cout << "Error updating student file.\n";
+            return;
+        }
+    
+        for (const auto& s : students) {
+            out << s.name << "," << s.rollNo << "," << s.cgpa << "," << s.attendance << "\n";
+        }
+    
+        out.close();
+        cout << "Student " << studentToRemove << " removed successfully.\n";
     }
-    
     
 };
 
@@ -455,6 +487,7 @@ void writeAttendanceReport(const vector<Student>& students) {
 // Marks attendance for students
 void markAttendance(vector<Student>& students) {
     cout << "\n--- Mark Attendance (1 = Present, 0 = Absent) ---\n";
+    # pragma omp parallel for
     for (auto& student : students) {
         int present;
         cout << "Is " << student.name << " present? (1/0): ";
@@ -507,52 +540,93 @@ void loadData(const string& filename, vector<HOD>& hods, vector<Faculty>& facult
     in.close();
 }
 
-void saveData(const std::string& filename, 
-              const std::vector<HOD>& hods, 
-              const std::vector<Faculty>& faculties, 
-              const std::vector<Student>& students) 
-{
-    try {
-        std::ofstream out(filename);
-        if (!out.is_open()) {
-            throw std::ios_base::failure("Error opening file for writing: " + filename);
-        }
-
-        out << hods.size() << " " << faculties.size() << " " << students.size() << "\n";
-
-        // Write HOD data
-        for (const auto& hod : hods) {
-            out << hod.name << "," << hod.passkey << "\n";
-            if (!out) {
-                throw std::ios_base::failure("Failed to write HOD data.");
-            }
-        }
-
-        // Write Faculty data
-        for (const auto& faculty : faculties) {
-            out << faculty.name << "," << faculty.passkey << "\n";
-            if (!out) {
-                throw std::ios_base::failure("Failed to write Faculty data.");
-            }
-        }
-
-        // Write Student data
-        for (const auto& student : students) {
-            out << student.name << "," << student.rollNo << "," << student.cgpa << "," << student.attendance << "\n";
-            if (!out) {
-                throw std::ios_base::failure("Failed to write Student data.");
-            }
-        }
-
-        out.close();
-        if (out.fail()) {
-            throw std::ios_base::failure("Failed to close the file properly.");
-        }
+void saveData(const string& filename, const vector<HOD>& hods, const vector<Faculty>& faculties, const vector<Student>& students) {
+    ofstream out(filename);
+    if (!out) {
+        cerr << "Error opening file for writing: " << filename << endl;
+        return;
     }
-    catch (const std::exception& e) {
-        std::cerr << "Error saving data: " << e.what() << std::endl;
+    
+    out << hods.size() << " " << faculties.size() << " " << students.size() << "\n";
+
+    // Write HOD data to hodLines
+    vector<string> hodLines(hods.size());
+    #pragma omp parallel for
+    for (int i = 0; i < (int)hods.size(); ++i) {
+        ostringstream oss;
+        oss << hods[i].name << "," << hods[i].passkey << "\n";
+        hodLines[i] = oss.str();
     }
+
+    // Write Faculty data to facultyLines
+    vector<string> facultyLines(faculties.size());
+    #pragma omp parallel for
+    for (int i = 0; i < (int)faculties.size(); ++i) {
+        ostringstream oss;
+        oss << faculties[i].name << "," << faculties[i].passkey << "\n";
+        facultyLines[i] = oss.str();
+    }
+
+    // Write Student data to studentLines
+    vector<string> studentLines(students.size());
+    #pragma omp parallel for
+    for (int i = 0; i < (int)students.size(); ++i) {
+        ostringstream oss;
+        oss << students[i].name << "," << students[i].rollNo << "," << students[i].cgpa << "," << students[i].attendance << "\n";
+        studentLines[i] = oss.str();
+    }
+
+    // Dont write in open multi-processing to preserve order
+    for (const auto& line : hodLines) out << line;
+    for (const auto& line : facultyLines) out << line;
+    for (const auto& line : studentLines) out << line;
+
+    out.close();
 }
+
+inline void displayMainMenu() {
+    cout << "\n=== MAIN MENU ===\n";
+    cout << "1. Student Login\n";
+    cout << "2. Faculty Login\n";
+    cout << "3. HOD Login\n";
+    cout << "0. Exit\n";
+    cout << "Enter choice: ";
+}
+
+inline void displayStudentMenu() {
+    cout << "\n--- STUDENT MENU ---\n";
+    cout << "1. Upload File\n";
+    cout << "2. Delete File\n";
+    cout << "3. View Attendance\n";
+    cout << "4. View CGPA\n";
+    cout << "0. Logout\n";
+    cout << "Enter choice: ";
+}
+
+inline void displayFacultyMenu() {
+    cout << "\n--- FACULTY MENU ---\n";
+    cout << "1. Upload File\n";
+    cout << "2. Delete File\n";
+    cout << "3. View Student Files\n";
+    cout << "4. Read Student Files\n";
+    cout << "5. View Attendance Report\n";
+    cout << "0. Back\n";
+}
+
+inline void displayHODMenu() {
+    cout << "\n--- HOD MENU ---\n";
+    cout << "1. View All Student Data\n";
+    cout << "2. View All Faculty Data\n";
+    cout << "3. View All Files\n";
+    cout << "4. Hire Faculty\n";
+    cout << "5. Fire Faculty\n";
+    cout << "6. Add a student\n";
+    cout << "7. Remove a student\n";
+    cout << "8. Mark Attendance\n";
+    cout << "0. Back\n";
+    cout << "Enter choice: ";
+}
+
 int main() {
     vector<Student> students;
     vector<Faculty> faculties;
@@ -566,143 +640,131 @@ int main() {
     HOD& hod = hods[0];
 
     while (true) {
-        cout << "\n=== MAIN MENU ===\n";
-        cout << "1. Student Login\n";
-        cout << "2. Faculty Login\n";
-        cout << "3. HOD Login\n";
-        cout << "0. Exit\n";
-        cout << "Enter choice: ";
+        displayMainMenu();
         int roleChoice;
         cin >> roleChoice;
 
-        if (roleChoice == 0) {
-            cout << "Exiting program.\n";
-            break;
-        }
-
         try {
-            switch (roleChoice) {
-                case 1: {
-                    vector<string> studentNames;
-                    for (const auto& s : students) studentNames.push_back(s.name);
-                    int index = getIndexByName(studentNames, "Select a student:");
-                    if (index == -1) break;
+            if (cin.fail()) {
+                string junk;
+                cin.clear();
+                getline(cin, junk);
+                throw "Enter Integer Value.";
+            }
 
-                    while (true) {
-                        cout << "\n--- STUDENT MENU ---\n";
-                        cout << "1. Upload File\n";
-                        cout << "2. Delete File\n";
-                        cout << "3. View Attendance\n";
-                        cout << "4. View CGPA\n";
-                        cout << "0. Logout\n";
-                        cout << "Enter choice: ";
-                        int studentChoice;
-                        cin >> studentChoice;
-
-                        if (studentChoice == 0) {
-                            cout << "Student Logging out."<<endl;
-                            break;
-                        }
-
-                        switch (studentChoice) {
-                            case 1: students[index].uploadFile(); break;
-                            case 2: students[index].deleteFile(); break;
-                            case 3: students[index].viewAttendance(); break;
-                            case 4: students[index].viewCGPA(); break;
-                            default: cout << "Invalid option.\n"; break;
-                        }
-                    }
+            else {
+                if (roleChoice == 0) {
+                    cout << "Exiting program.\n";
                     break;
                 }
 
-                case 2: {
-                    vector<string> facultyNames;
-                    for (const auto& f : faculties) facultyNames.push_back(f.name);
-                    int index = getIndexByName(facultyNames, "Select a faculty:");
-                    if (index == -1) break;
+                switch (roleChoice) {
+                    case 1: {
+                        vector<string> studentNames;
+                        for (const auto& s : students) studentNames.push_back(s.name);
+                        int index = getIndexByName(studentNames, "Select a student:");
+                        if (index == -1) break;
 
-                    string passkey;
-                    cout << "Enter passkey: ";
-                    cin >> passkey;
+                        while (true) {
+                            displayStudentMenu();
+                            int studentChoice;
+                            cin >> studentChoice;
 
-                    if (!faculties[index].verifyPasskey(passkey)) {
-                        cout << "Invalid passkey.\n";
+                            if (studentChoice == 0) {
+                                cout << "Student Logging out."<<endl;
+                                break;
+                            }
+
+                            switch (studentChoice) {
+                                case 1: students[index].uploadFile(); break;
+                                case 2: students[index].deleteFile(); break;
+                                case 3: students[index].viewAttendance(); break;
+                                case 4: students[index].viewCGPA(); break;
+                                default: cout << "Invalid option.\n"; break;
+                            }
+                        }
                         break;
                     }
 
-                    while (true) {
-                        cout << "\n--- FACULTY MENU ---\n";
-                        cout << "1. Upload File\n";
-                        cout << "2. Delete File\n";
-                        cout << "3. View Student Files\n";
-                        cout << "4. View Attendance Report\n";
-                        cout << "0. Back\n";
-                        cout << "Enter choice: ";
-                        int facultyChoice;
-                        cin >> facultyChoice;
+                    case 2: {
+                        vector<string> facultyNames;
+                        for (const auto& f : faculties) facultyNames.push_back(f.name);
+                        int index = getIndexByName(facultyNames, "Select a faculty:");
+                        if (index == -1) break;
 
-                        if (facultyChoice == 0) break;
+                        string passkey;
+                        cout << "Enter passkey: ";
+                        cin >> passkey;
 
-                        switch (facultyChoice) {
-                            case 1: faculties[index].uploadFile(); break;
-                            case 2: faculties[index].deleteFile(); break;
-                            case 3: faculties[index].viewStudentFiles(students); break;
-                            case 4: faculties[index].viewAttendanceReport(); break;
-                            default: cout << "Invalid option.\n"; break;
+                        if (!faculties[index].verifyPasskey(passkey)) {
+                            cout << "Invalid passkey.\n";
+                            break;
                         }
-                    }
-                    break;
-                }
 
-                case 3: {
-                    string key;
-                    cout << "Enter HOD passkey: ";
-                    cin >> key;
-                    if (!hod.verifyPasskey(key)) {
-                        cout << "Invalid passkey.\n";
+                        while (true) {
+                            displayFacultyMenu();
+                            cout << "Enter choice: ";
+                            int facultyChoice;
+                            cin >> facultyChoice;
+
+                            if (facultyChoice == 0) break;
+
+                            switch (facultyChoice) {
+                                case 1: faculties[index].uploadFile(); break;
+                                case 2: faculties[index].deleteFile(); break;
+                                case 3: faculties[index].viewStudentFiles(students); break;
+                                case 4: faculties[index].readStudentFiles(students); break;
+                                case 5: faculties[index].viewAttendanceReport(); break;
+                                default: cout << "Invalid option.\n"; break;
+                            }
+                        }
                         break;
                     }
 
-                    while (true) {
-                        cout << "\n--- HOD MENU ---\n";
-                        cout << "1. View All Student Data\n";
-                        cout << "2. View All Faculty Data\n";
-                        cout << "3. View All Files\n";
-                        cout << "4. Hire Faculty\n";
-                        cout << "5. Fire Faculty\n";
-                        cout << "6. Add a student\n";
-                        cout << "7. Remove a student\n";
-                        cout << "8. Mark Attendance\n";
-                        cout << "0. Back\n";
-                        cout << "Enter choice: ";
-                        int hodChoice;
-                        cin >> hodChoice;
+                    case 3: {
+                        string key;
+                        cout << "Enter HOD passkey: ";
+                        cin >> key;
 
-                        if (hodChoice == 0) 
-                        {
-                            saveData("meow.txt", hods, faculties, students);
+                        if (!hod.verifyPasskey(key)) {
+                            cout << "Invalid passkey.\n";
                             break;
                         }
-                        
-                        switch (hodChoice) {
-                            case 1: hod.viewAllStudentData(students); break;
-                            case 2: hod.viewAllFacultyData(faculties); break;
-                            case 3: hod.viewAllFiles(students, faculties); break;
-                            case 4: hod.hireFaculty(faculties, "meow.txt"); break;
-                            case 5: hod.fireFaculty(faculties, "meow.txt"); break;
-                            case 6: hod.AddStudent(students, "meow.txt"); break;
-                            case 7: hod.RemoveStudent(students, "meow.txt"); break;
-                            case 8: markAttendance(students); break;
-                            default: cout << "Invalid option.\n"; break;
-                        }
-                    }
-                    break;
-                }
 
-                default: cout << "Invalid role selection.\n"; break;
+                        while (true) {
+                            displayHODMenu();
+                            int hodChoice;
+                            cin >> hodChoice;
+
+                            if (hodChoice == 0) 
+                            {
+                                saveData("meow.txt", hods, faculties, students);
+                                break;
+                            }
+                            
+                            switch (hodChoice) {
+                                case 1: hod.viewAllStudentData(students); break;
+                                case 2: hod.viewAllFacultyData(faculties); break;
+                                case 3: hod.viewAllFiles(students, faculties); break;
+                                case 4: hod.hireFaculty(faculties, "meow.txt"); break;
+                                case 5: hod.fireFaculty(faculties, "meow.txt"); break;
+                                case 6: hod.AddStudent(students, "meow.txt"); break;
+                                case 7: hod.RemoveStudent(students, "meow.txt"); break;
+                                case 8: markAttendance(students); break;
+                                default: cout << "Invalid option.\n"; break;
+                            }
+                        }
+                        break;
+                    }
+
+                    default: cout << "Invalid role selection.\n";
+                }
             }
         } catch (const exception& e) {
             cout << "An error occurred: " << e.what() << endl;
+        }
+        catch (const char* msg) {
+            cout << msg <<endl;
         }
     }
 }
